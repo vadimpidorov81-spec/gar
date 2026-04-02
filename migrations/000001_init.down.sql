@@ -1,0 +1,1 @@
+drop table if exists gar.as_addr_obj;
