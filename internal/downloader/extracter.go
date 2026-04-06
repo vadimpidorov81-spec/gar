@@ -1,4 +1,4 @@
-package parser
+package downloader
 
 import (
 	"archive/zip"
@@ -9,12 +9,15 @@ import (
 	"strings"
 )
 
-func Unzip(zipPath, dstDir string) error {
+func UnzipRegion(zipPath, dstDir, regionCode string) error {
 	if zipPath == "" {
 		return fmt.Errorf("zipPath is empty")
 	}
 	if dstDir == "" {
 		return fmt.Errorf("dstDir is empty")
+	}
+	if regionCode == "" {
+		return fmt.Errorf("regionCode is empty")
 	}
 
 	reader, err := zip.OpenReader(zipPath)
@@ -27,8 +30,16 @@ func Unzip(zipPath, dstDir string) error {
 		return fmt.Errorf("create dst dir: %w", err)
 	}
 
+	regionPrefix := regionCode + "/"
+
 	for _, file := range reader.File {
-		if err := extractFile(file, dstDir); err != nil {
+		zipName := filepath.ToSlash(file.Name)
+
+		if !strings.HasPrefix(zipName, regionPrefix) {
+			continue
+		}
+
+		if err := extractZipFile(file, dstDir); err != nil {
 			return err
 		}
 	}
@@ -36,7 +47,7 @@ func Unzip(zipPath, dstDir string) error {
 	return nil
 }
 
-func extractFile(file *zip.File, dstDir string) error {
+func extractZipFile(file *zip.File, dstDir string) error {
 	cleanDst := filepath.Clean(dstDir)
 	targetPath := filepath.Clean(filepath.Join(cleanDst, file.Name))
 
