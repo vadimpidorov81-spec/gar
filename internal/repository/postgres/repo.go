@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"gar-loader/internal/parser"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,49 +17,29 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-const upsertAddrObjQuery = `
-insert into gar.as_addr_obj (
-    id,
-    objectid,
-    objectguid,
-    changeid,
-    name,
-    typename,
-    level,
-    opertypeid,
-    previd,
-    nextid,
-    updatedate,
-    startdate,
-    enddate,
-    isactual,
-    isactive
-) values (
-    $1, $2, $3, $4, $5,
-    $6, $7, $8, $9, $10,
-    $11, $12, $13, $14, $15
-)
-on conflict (id) do update set
-    objectid   = excluded.objectid,
-    objectguid = excluded.objectguid,
-    changeid   = excluded.changeid,
-    name       = excluded.name,
-    typename   = excluded.typename,
-    level      = excluded.level,
-    opertypeid = excluded.opertypeid,
-    previd     = excluded.previd,
-    nextid     = excluded.nextid,
-    updatedate = excluded.updatedate,
-    startdate  = excluded.startdate,
-    enddate    = excluded.enddate,
-    isactual   = excluded.isactual,
-    isactive   = excluded.isactive
-`
+type BatchUpsertConfig[T any] struct {
+	Table           string
+	Columns         []string
+	ConflictColumns []string
+	UpdateColumns   []string
+	Values          func(T) []any
+}
 
-func (r *Repository) UpsertAddrObjsBatch(ctx context.Context, items []parser.AddrObj) error {
+func UpsertBatch[T any](ctx context.Context, r *Repository, items []T, cfg BatchUpsertConfig[T]) error {
 	if len(items) == 0 {
 		return nil
 	}
+
+	if err := validateBatchConfig(cfg); err != nil {
+		return err
+	}
+
+	query := buildUpsertQuery(
+		cfg.Table,
+		cfg.Columns,
+		cfg.ConflictColumns,
+		cfg.UpdateColumns,
+	)
 
 	const batchSize = 1000
 
@@ -69,47 +49,88 @@ func (r *Repository) UpsertAddrObjsBatch(ctx context.Context, items []parser.Add
 			end = len(items)
 		}
 
-		if err := r.upsertAddrObjsChunk(ctx, items[start:end]); err != nil {
-			return fmt.Errorf("upsert addr objs chunk [%d:%d]: %w", start, end, err)
+		if err := execBatchChunk(ctx, r.db, items[start:end], query, cfg.Values); err != nil {
+			return fmt.Errorf("upsert batch chunk [%d:%d]: %w", start, end, err)
 		}
 	}
 
 	return nil
 }
 
-func (r *Repository) upsertAddrObjsChunk(ctx context.Context, items []parser.AddrObj) error {
+func validateBatchConfig[T any](cfg BatchUpsertConfig[T]) error {
+	if cfg.Table == "" {
+		return fmt.Errorf("table is empty")
+	}
+	if len(cfg.Columns) == 0 {
+		return fmt.Errorf("columns are empty")
+	}
+	if len(cfg.ConflictColumns) == 0 {
+		return fmt.Errorf("conflict columns are empty")
+	}
+	if len(cfg.UpdateColumns) == 0 {
+		return fmt.Errorf("update columns are empty")
+	}
+	if cfg.Values == nil {
+		return fmt.Errorf("values func is nil")
+	}
+
+	return nil
+}
+
+func execBatchChunk[T any](
+	ctx context.Context,
+	db *pgxpool.Pool,
+	items []T,
+	query string,
+	valuesFn func(T) []any,
+) error {
 	var batch pgx.Batch
 
 	for _, item := range items {
-		batch.Queue(
-			upsertAddrObjQuery,
-			item.ID,
-			item.ObjectID,
-			item.ObjectGUID,
-			item.ChangeID,
-			item.Name,
-			item.TypeName,
-			item.Level,
-			item.OperTypeID,
-			item.PrevID,
-			item.NextID,
-			item.UpdateDate,
-			item.StartDate,
-			item.EndDate,
-			item.IsActual,
-			item.IsActive,
-		)
+		batch.Queue(query, valuesFn(item)...)
 	}
 
-	results := r.db.SendBatch(ctx, &batch)
+	results := db.SendBatch(ctx, &batch)
 	defer results.Close()
 
 	for i := 0; i < len(items); i++ {
-		_, err := results.Exec()
-		if err != nil {
-			return fmt.Errorf("exec batch item %d (id=%d): %w", i, items[i].ID, err)
+		if _, err := results.Exec(); err != nil {
+			return fmt.Errorf("exec batch item %d: %w", i, err)
 		}
 	}
 
 	return nil
+}
+
+func buildUpsertQuery(
+	table string,
+	columns []string,
+	conflictColumns []string,
+	updateColumns []string,
+) string {
+	placeholders := make([]string, 0, len(columns))
+	for i := range columns {
+		placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
+	}
+
+	updates := make([]string, 0, len(updateColumns))
+	for _, col := range updateColumns {
+		updates = append(updates, fmt.Sprintf("%s = excluded.%s", col, col))
+	}
+
+	return fmt.Sprintf(`
+insert into %s (
+    %s
+) values (
+    %s
+)
+on conflict (%s) do update set
+    %s
+`,
+		table,
+		strings.Join(columns, ",\n    "),
+		strings.Join(placeholders, ", "),
+		strings.Join(conflictColumns, ", "),
+		strings.Join(updates, ",\n    "),
+	)
 }
