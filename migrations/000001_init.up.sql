@@ -119,4 +119,87 @@ create table if not exists gar.as_houses (
     constraint chk_as_houses_isactual check (isactual in (0, 1)),
     constraint chk_as_houses_isactive check (isactive in (0, 1))
 );
+create table if not exists gar.as_mun_hierarchy (
+                                                    id           bigint       not null,
+                                                    objectid     bigint       not null,
+                                                    parentobjid  bigint,
+                                                    changeid     bigint       not null,
+                                                    oktmo        varchar(11),
+    previd       bigint,
+    nextid       bigint,
+    updatedate   date         not null,
+    startdate    date         not null,
+    enddate      date         not null,
+    isactive     smallint     not null,
+    path         text         not null,
 
+    constraint pk_as_mun_hierarchy primary key (id),
+    constraint chk_as_mun_hierarchy_isactive check (isactive in (0, 1))
+);
+create table if not exists gar.as_normative_docs (
+                                                     id           bigint        not null,
+                                                     name         text          not null,
+                                                     date         date          not null,
+                                                     number       varchar(20)   not null,
+    type         integer       not null,
+    kind         integer       not null,
+    updatedate   date          not null,
+    orgname      varchar(500),
+    regnum       varchar(100),
+    regdate      date,
+    accdate      date,
+    comment      text,
+
+    constraint pk_as_normative_docs primary key (id)
+);
+create table if not exists gar.as_reestr_objects (
+                                                     objectid     bigint       not null,
+                                                     objectguid   uuid         not null,
+                                                     changeid     bigint       not null,
+                                                     isactive     smallint     not null,
+                                                     levelid      integer      not null,
+                                                     createdate   date         not null,
+                                                     updatedate   date         not null,
+
+                                                     constraint pk_as_reestr_objects primary key (objectid),
+    constraint chk_as_reestr_objects_isactive check (isactive in (0, 1))
+);
+create table if not exists gar.as_rooms (
+                                            id           bigint       not null,
+                                            objectid     bigint       not null,
+                                            objectguid   uuid         not null,
+                                            changeid     bigint       not null,
+                                            number       varchar(50)  not null,
+    roomtype     integer      not null,
+    opertypeid   integer      not null,
+    previd       bigint,
+    nextid       bigint,
+    updatedate   date         not null,
+    startdate    date         not null,
+    enddate      date         not null,
+    isactual     smallint     not null,
+    isactive     smallint     not null,
+
+    constraint pk_as_rooms primary key (id),
+    constraint chk_as_rooms_isactual check (isactual in (0, 1)),
+    constraint chk_as_rooms_isactive check (isactive in (0, 1))
+);
+create table if not exists gar.as_steads (
+                                             id           bigint        not null,
+                                             objectid     bigint        not null,
+                                             objectguid   uuid          not null,
+                                             changeid     bigint        not null,
+                                             number       varchar(250)  not null,
+    opertypeid   integer       not null,
+    previd       bigint,
+    nextid       bigint,
+    updatedate   date          not null,
+    startdate    date          not null,
+    enddate      date          not null,
+    isactual     smallint      not null,
+    isactive     smallint      not null,
+
+    constraint pk_as_steads primary key (id),
+    constraint chk_as_steads_isactual check (isactual in (0, 1)),
+    constraint chk_as_steads_isactive check (isactive in (0, 1))
+);

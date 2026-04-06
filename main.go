@@ -91,6 +91,61 @@ var jobs = map[string]importJob{
 			},
 		)
 	},
+	"AS_MUN_HIERARCHY_2": func(ctx context.Context, repo *postgres.Repository, xmlPath string) error {
+		return parser.ParseXMLStream[parser.MunHierarchyXML, postgres.MunHierarchy](
+			xmlPath,
+			"ITEM",
+			1000,
+			parser.MapMunHierarchy,
+			func(items []postgres.MunHierarchy) error {
+				return postgres.UpsertBatch(ctx, repo, items, postgres.MunHierarchyUpsertConfig)
+			},
+		)
+	},
+	"AS_NORMATIVE_DOCS_2": func(ctx context.Context, repo *postgres.Repository, xmlPath string) error {
+		return parser.ParseXMLStream[parser.NormativeDocXML, postgres.NormativeDoc](
+			xmlPath,
+			"NORMDOC",
+			1000,
+			parser.MapNormativeDoc,
+			func(items []postgres.NormativeDoc) error {
+				return postgres.UpsertBatch(ctx, repo, items, postgres.NormativeDocUpsertConfig)
+			},
+		)
+	},
+	"AS_REESTR_OBJECTS_2": func(ctx context.Context, repo *postgres.Repository, xmlPath string) error {
+		return parser.ParseXMLStream[parser.ReestrObjectXML, postgres.ReestrObject](
+			xmlPath,
+			"OBJECT",
+			1000,
+			parser.MapReestrObject,
+			func(items []postgres.ReestrObject) error {
+				return postgres.UpsertBatch(ctx, repo, items, postgres.ReestrObjectUpsertConfig)
+			},
+		)
+	},
+	"AS_ROOMS_2": func(ctx context.Context, repo *postgres.Repository, xmlPath string) error {
+		return parser.ParseXMLStream[parser.RoomXML, postgres.Room](
+			xmlPath,
+			"ROOM",
+			1000,
+			parser.MapRoom,
+			func(items []postgres.Room) error {
+				return postgres.UpsertBatch(ctx, repo, items, postgres.RoomUpsertConfig)
+			},
+		)
+	},
+	"AS_STEADS_2": func(ctx context.Context, repo *postgres.Repository, xmlPath string) error {
+		return parser.ParseXMLStream[parser.SteadXML, postgres.Stead](
+			xmlPath,
+			"STEAD",
+			1000,
+			parser.MapStead,
+			func(items []postgres.Stead) error {
+				return postgres.UpsertBatch(ctx, repo, items, postgres.SteadUpsertConfig)
+			},
+		)
+	},
 }
 
 func DeleteFolder(path string) error {
@@ -181,6 +236,22 @@ func main() {
 	err = run(ctx, repo, xmlDir, "AS_HOUSES_2")
 	if err != nil {
 		log.Fatal(err, "...AS_HOUSES_2")
+	}
+	err = run(ctx, repo, xmlDir, "AS_MUN_HIERARCHY_2")
+	if err != nil {
+		log.Fatal(err, "...AS_MUN_HIERARCHY_2")
+	}
+	err = run(ctx, repo, xmlDir, "AS_REESTR_OBJ_2")
+	if err != nil {
+		log.Fatal(err, "...AS_REESTR_OBJ_2")
+	}
+	err = run(ctx, repo, xmlDir, "AS_ROOMS_2")
+	if err != nil {
+		log.Fatal(err, "...AS_ROOMS_2")
+	}
+	err = run(ctx, repo, xmlDir, "AS_STEADS_2")
+	if err != nil {
+		log.Fatal(err, "...AS_STEADS_2")
 	}
 }
 

@@ -101,3 +101,71 @@ type House struct {
 	IsActual int16
 	IsActive int16
 }
+type MunHierarchy struct {
+	ID          int64
+	ObjectID    int64
+	ParentObjID *int64
+	ChangeID    int64
+	Oktmo       string
+	PrevID      *int64
+	NextID      *int64
+	UpdateDate  time.Time
+	StartDate   time.Time
+	EndDate     time.Time
+	IsActive    int16
+	Path        string
+}
+type NormativeDoc struct {
+	ID         int64
+	Name       string
+	Date       time.Time
+	Number     string
+	Type       int32
+	Kind       int32
+	UpdateDate time.Time
+	OrgName    string
+	RegNum     string
+	RegDate    *time.Time
+	AccDate    *time.Time
+	Comment    string
+}
+type ReestrObject struct {
+	ObjectID   int64
+	ObjectGUID string
+	ChangeID   int64
+	IsActive   int16
+	LevelID    int32
+	CreateDate time.Time
+	UpdateDate time.Time
+}
+type Room struct {
+	ID         int64
+	ObjectID   int64
+	ObjectGUID string
+	ChangeID   int64
+	Number     string
+	RoomType   int32
+	OperTypeID int32
+	PrevID     *int64
+	NextID     *int64
+	UpdateDate time.Time
+	StartDate  time.Time
+	EndDate    time.Time
+	IsActual   int16
+	IsActive   int16
+}
+type Stead struct {
+	ID         int64
+	ObjectID   int64
+	ObjectGUID string
+	ChangeID   int64
+	Number     string
+	OperTypeID int32
+	PrevID     *int64
+	NextID     *int64
+	UpdateDate time.Time
+	StartDate  time.Time
+	EndDate    time.Time
+	IsActual   int16
+	IsActive   int16
+}
