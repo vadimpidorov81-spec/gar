@@ -241,7 +241,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err, "...AS_MUN_HIERARCHY_2")
 	}
-	err = run(ctx, repo, xmlDir, "AS_REESTR_OBJ_2")
+	err = run(ctx, repo, xmlDir, "AS_NORMATIVE_DOCS_2")
+	if err != nil {
+		log.Fatal(err, "...AS_NORMATIVE_DOCS_2")
+	}
+	err = run(ctx, repo, xmlDir, "AS_REESTR_OBJECTS_2")
 	if err != nil {
 		log.Fatal(err, "...AS_REESTR_OBJ_2")
 	}
